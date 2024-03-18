@@ -1,3 +1,3 @@
-# video streaming platform backend
+# Video streaming platform backend
 
 This is created using javascript
