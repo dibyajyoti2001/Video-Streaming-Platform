@@ -1,0 +1,15 @@
+{
+  "name": "video-streaming-platform",
+  "version": "1.0.0",
+  "description": "a backend created by dibyajyoti",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "javascript",
+    "backend"
+  ],
+  "author": "Dibyajyoti Sahoo",
+  "license": "ISC"
+}
