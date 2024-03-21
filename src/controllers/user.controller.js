@@ -49,7 +49,6 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   // create user object - create entry in db
-  // remove password, refresh token field from response
   const user = await User.create({
     fullName,
     username: username.toLowerCase(),
@@ -61,6 +60,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   console.log("User created: ", user);
 
+  // remove password, refresh token field from response
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
