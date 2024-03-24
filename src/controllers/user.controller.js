@@ -7,7 +7,6 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 const registerUser = asyncHandler(async (req, res) => {
   // get user details from frontend
   const { fullName, username, email, password } = req.body;
-  console.log("User details: ", fullName, username, email, password);
 
   // validate user details - not empty
   if (
@@ -19,11 +18,9 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   // check if user already exist - username and email
-  const existedUser = User.findOne({
+  const existedUser = await User.findOne({
     $or: [{ username }, { email }],
   });
-
-  console.log("Existing user: ", existedUser);
 
   if (existedUser) {
     throw new ApiError(409, "User already exists");
@@ -31,10 +28,16 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // check for images and avtar
   const avtarLocalPath = req.files?.avtar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
-  console.log("Avtar: ", avtarLocalPath);
-  console.log("CoverImage: ", coverImageLocalPath);
+  let coverImageLocalPath;
+
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImage) &&
+    req.files.coverImage.length > 0
+  ) {
+    coverImageLocalPath = req.files.coverImage[0].path;
+  }
 
   if (!avtarLocalPath) {
     throw new ApiError(400, "Avtar must be required");
@@ -58,14 +61,10 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImage: coverImage?.url || "",
   });
 
-  console.log("User created: ", user);
-
   // remove password, refresh token field from response
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
-
-  console.log("After user created: ", createdUser);
 
   // check user creation
   if (!createdUser) {
