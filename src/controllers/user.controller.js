@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import { deleteFromCloudinary } from "../utils/deleteImageAfterUpdate.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -289,14 +290,26 @@ const updateUserAvtar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid avtar");
   }
 
+  // Retrive the old avtar image from the user document
+  const user = await User.findById(req.user?.id).select("avtar");
+
   // Update avtar on database
-  const user = await User.findByIdAndUpdate(
+  const updateUser = await User.findByIdAndUpdate(
     req.user?._id,
     { $set: { avtar: avtar.url } },
     { new: true }
   ).select("-password");
 
-  return res.status(201).json(200, user, "Avtar updated successfully");
+  // Delete old avtar from Cloudinary
+  if (user.avtar) {
+    // Extract public ID from old avtar URL
+    const publicId = user.avtar.split("/").pop().split(".")[0];
+    await deleteFromCloudinary(publicId);
+  }
+
+  return res
+    .status(201)
+    .json(200, { user: updateUser }, "Avtar updated successfully");
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
@@ -315,14 +328,25 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid cover image");
   }
 
+  // Retrive the cover image from the user document
+  const user = await User.findById(req.user?.id).select("coverImage");
+
   // Update cover image on database
-  const user = await User.findByIdAndUpdate(
+  const updateUser = await User.findByIdAndUpdate(
     req.user?._id,
     { $set: { coverImage: coverImage.url } },
     { new: true }
   ).select("-password");
 
-  return res.status(201).json(200, user, "Cover image updated successfully");
+  // Delete the old cover image from cloudinary
+  if (user.coverImage) {
+    const publicId = user.coverImage.split("/").pop().split(".")[0];
+    await deleteFromCloudinary(publicId);
+  }
+
+  return res
+    .status(201)
+    .json(200, { user: updateUser }, "Cover image updated successfully");
 });
 
 export {
