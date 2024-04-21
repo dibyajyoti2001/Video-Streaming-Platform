@@ -384,7 +384,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         as: "subscribedTo",
       },
     },
-    // Stage-4: add the two subscribers and subscribedTo fields to the user with counted format
+    // Stage-4: add the two subscribers and subscribedTo fields to the userSchema with counted format
     {
       $addFields: {
         subscribersCount: {
