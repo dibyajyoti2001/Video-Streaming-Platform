@@ -5,6 +5,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import { deleteFromCloudinary } from "../utils/deleteImageAfterUpdate.js";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -427,6 +428,61 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     );
 });
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    // Stage-1: Get the user and match by aggregation pipeline
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    // Stage-2: Join the videos with watchHistory, So that the watchHistory completes with all videos seen by user
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        // Stage-2.1: Join the user/owner with videos, So that in watchHistory you can know which user/owner videos you seen
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              // Stage-2.2: Return the neccessary user details to the owner field
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avtar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          // Stage-2.3: Add first field of the owner to the watchHistory
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(200, user[0], "User watch history fetched successfully")
+    );
+});
+
 export {
   registerUser,
   loginUser,
@@ -438,4 +494,5 @@ export {
   updateUserAvtar,
   updateUserCoverImage,
   getUserChannelProfile,
+  getWatchHistory,
 };
