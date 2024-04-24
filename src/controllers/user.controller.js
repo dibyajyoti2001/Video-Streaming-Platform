@@ -272,7 +272,9 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password");
 
-  return res.status(201).json(200, user, "Account updated successfully");
+  return res
+    .status(201)
+    .json(new ApiResponse(200, user, "Account updated successfully"));
 });
 
 const updateUserAvtar = asyncHandler(async (req, res) => {
@@ -310,7 +312,9 @@ const updateUserAvtar = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(200, { user: updateUser }, "Avtar updated successfully");
+    .json(
+      new ApiResponse(200, { user: updateUser }, "Avtar updated successfully")
+    );
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
@@ -347,7 +351,13 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(200, { user: updateUser }, "Cover image updated successfully");
+    .json(
+      new ApiResponse(
+        200,
+        { user: updateUser },
+        "Cover image updated successfully"
+      )
+    );
 });
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
