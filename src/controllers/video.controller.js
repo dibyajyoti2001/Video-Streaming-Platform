@@ -4,6 +4,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary";
 import { Video } from "../models/video.model";
 import { ApiResponse } from "../utils/ApiResponse";
 import mongoose from "mongoose";
+import { deleteFromCloudinary } from "../utils/deleteImageAfterUpdate";
 
 const publishAVideo = asyncHandler(async (req, res) => {
   // Get neccessary information for video creation
@@ -79,4 +80,76 @@ const getVideoById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, userVideo, "Video fetched successfully"));
 });
 
-export { publishAVideo, getVideoById };
+const updateVideo = asyncHandler(async (req, res) => {
+  // Get video id from params
+  const { videoId } = req.params;
+
+  // Validate it
+  if (!videoId) {
+    throw new ApiError(400, "Invalid video id");
+  }
+
+  // Check if video id exists or not in the database
+  if (!mongoose.isValidObjectId(videoId)) {
+    throw new ApiError(400, "Video id not verified");
+  }
+
+  // Get video details to update
+  const { title, description } = req.body;
+
+  // Validate it
+  if (!(title && description)) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  // Find the thumbnail path from multer and validate it
+  const thumbnailLocalPath = req.files?.path;
+
+  if (!thumbnailLocalPath) {
+    throw new ApiError(400, "File path missing");
+  }
+
+  // Upload thumbnail on cloudinary and validate it
+  const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+
+  if (!thumbnail.url) {
+    throw new ApiError(400, "Thumbnail URL missing");
+  }
+
+  // Retrieve the old video details from database
+  const video = await Video.findById(videoId).select(
+    "title description thumbnail"
+  );
+
+  // Update the video details
+  const updateVideoDetails = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      $set: {
+        title,
+        description,
+        thumbnail: thumbnail.url,
+      },
+    },
+    { new: true }
+  ).select("-videoFile -duration");
+
+  // Delete old thumbnail from cloudinary
+  if (video.thumbnail) {
+    // Extract public ID from old avtar URL
+    const publicId = video.thumbnail.split("/").pop().split(".")[0];
+    await deleteFromCloudinary(publicId);
+  }
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        200,
+        { video: updateVideoDetails },
+        "Video updated successfully"
+      )
+    );
+});
+
+export { publishAVideo, getVideoById, updateVideo };
