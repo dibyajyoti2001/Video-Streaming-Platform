@@ -1,17 +1,17 @@
-import mongoose from "mongoose";
-import { ApiError } from "../utils/ApiError";
-import { asyncHandler } from "../utils/asyncHandler";
-import { uploadOnCloudinary } from "../utils/cloudinary";
-import { Video } from "../models/video.model";
-import { ApiResponse } from "../utils/ApiResponse";
-import { deleteFromCloudinary } from "../utils/deleteImageAfterUpdate";
+import mongoose, { isValidObjectId } from "mongoose";
+import { ApiError } from "../utils/ApiError.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { Video } from "../models/video.model.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { deleteFromCloudinary } from "../utils/deleteImageAfterUpdate.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   // Get all videos by query
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
 
   // Validate if userId empty and from database
-  if (!(userId && mongoose.isValidObjectId(userId))) {
+  if (!(userId && isValidObjectId(userId))) {
     throw new ApiError(400, "Invalid userId");
   }
 
@@ -20,7 +20,16 @@ const getAllVideos = asyncHandler(async (req, res) => {
     // Stage-1: Match the userId
     {
       $match: {
-        owner: new mongoose.Types.ObjectId(userId),
+        $or: [
+          {
+            owner: new mongoose.Types.ObjectId(userId),
+          },
+          {
+            title: {
+              $regex: query,
+            },
+          },
+        ],
       },
     },
     // Stage 2: Lookup user details
@@ -121,8 +130,8 @@ const getVideoById = asyncHandler(async (req, res) => {
   // Get video id from params
   const { videoId } = req.params;
 
-  // Validate if video exists and from database
-  if (!(videoId && mongoose.isValidObjectId(videoId))) {
+  // Validate if video id empty and from database
+  if (!(videoId && isValidObjectId(videoId))) {
     throw new ApiError(400, "Invalid video id");
   }
 
@@ -144,7 +153,7 @@ const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
   // Validate if video exists and from database
-  if (!(videoId && mongoose.isValidObjectId(videoId))) {
+  if (!(videoId && isValidObjectId(videoId))) {
     throw new ApiError(400, "Invalid video id");
   }
 
@@ -163,17 +172,16 @@ const updateVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "File path missing");
   }
 
+  // Get the old thumbnail path
+  const oldVideo = await Video.findById(videoId);
+  const oldThumbnail = oldVideo.thumbnail;
+
   // Upload thumbnail on cloudinary and validate it
   const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
 
   if (!thumbnail.url) {
     throw new ApiError(400, "Thumbnail URL missing");
   }
-
-  // Retrieve the old video details from database
-  const video = await Video.findById(videoId).select(
-    "title description thumbnail"
-  );
 
   // Update the video details
   const updateVideoDetails = await Video.findByIdAndUpdate(
@@ -189,9 +197,9 @@ const updateVideo = asyncHandler(async (req, res) => {
   ).select("-videoFile -duration");
 
   // Delete old thumbnail from cloudinary
-  if (video.thumbnail) {
+  if (oldThumbnail) {
     // Extract public ID from old avtar URL
-    const publicId = video.thumbnail.split("/").pop().split(".")[0];
+    const publicId = oldThumbnail.split("/").pop().split(".")[0];
     await deleteFromCloudinary(publicId);
   }
 
@@ -211,7 +219,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
   // Validate if video exists and from database
-  if (!(videoId && mongoose.isValidObjectId(videoId))) {
+  if (!(videoId && isValidObjectId(videoId))) {
     throw new ApiError(400, "Invalid video id");
   }
 
@@ -254,7 +262,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
   // Validate if video exists and from database
-  if (!(videoId && mongoose.isValidObjectId(videoId))) {
+  if (!(videoId && isValidObjectId(videoId))) {
     throw new ApiError(400, "Invalid video id");
   }
 
@@ -279,7 +287,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 
   // Validate if update status exists
   if (!updateToggleStatus) {
-    throw new ApiError(400, "Update status not found");
+    throw new ApiError(500, "Update status not found");
   }
 
   return res
