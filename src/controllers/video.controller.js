@@ -165,16 +165,16 @@ const updateVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
+  // Get the old thumbnail path
+  const oldVideo = await Video.findById(videoId);
+  const oldThumbnail = oldVideo.thumbnail;
+
   // Find the thumbnail path from multer and validate it
-  const thumbnailLocalPath = req.files?.path;
+  const thumbnailLocalPath = req.file?.path;
 
   if (!thumbnailLocalPath) {
     throw new ApiError(400, "File path missing");
   }
-
-  // Get the old thumbnail path
-  const oldVideo = await Video.findById(videoId);
-  const oldThumbnail = oldVideo.thumbnail;
 
   // Upload thumbnail on cloudinary and validate it
   const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
