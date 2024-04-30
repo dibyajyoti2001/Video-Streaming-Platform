@@ -4,6 +4,53 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Subscription } from "../models/subscription.model.js";
 
+const toggleSubscription = asyncHandler(async (req, res) => {
+  // Get the channel id to toggle the subscription
+  const { channelId } = req.params;
+
+  // Validate it
+  if (!(channelId && isValidObjectId(channelId))) {
+    throw new ApiError(400, "Invalid channel id");
+  }
+
+  // Find the user is subscribed or not
+  const isSubscribed = await Subscription.findOne({
+    subscriber: new mongoose.Types.ObjectId(req.user?._id),
+    channel: channelId,
+  });
+
+  // Check if is subscribed or not
+  if (isSubscribed) {
+    // Unsubscribe the user
+    await Subscription.findByIdAndDelete(isSubscribed._id);
+
+    return res
+      .status(201)
+      .json(
+        new ApiResponse(
+          200,
+          { isSubscribed: false },
+          "Unsubscribed successfully"
+        )
+      );
+  }
+
+  const isSubscribedTo = await Subscription.create({
+    subscriber: new mongoose.Types.ObjectId(req.user?._id),
+    channel: channelId,
+  });
+
+  if (!isSubscribedTo) {
+    throw new ApiError(500, "Error while subscribing");
+  }
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(200, { isSubscribed: true }, "Subscribed successfully")
+    );
+});
+
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   // Get the channel id to find the channel subscribers
   const { channelId } = req.params;
@@ -162,4 +209,4 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     );
 });
 
-export { getUserChannelSubscribers, getSubscribedChannels };
+export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels };
