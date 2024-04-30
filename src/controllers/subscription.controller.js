@@ -139,7 +139,7 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
 
   // Validate it
   if (!(subscriberId && isValidObjectId(subscriberId))) {
-    throw new ApiError(400, "Invalid channel id");
+    throw new ApiError(400, "Invalid subscriber id");
   }
 
   // Find the subscribed channel using aggregation pipeline
