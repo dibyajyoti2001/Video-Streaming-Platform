@@ -12,8 +12,8 @@ const router = Router();
 // Apply middleware for all subscriptions routes
 router.use(verifyJWT);
 
-router.route("/").get(getVideoComments).post(addComment);
+router.route("/:videoId").get(getVideoComments).post(addComment);
 
-router.route("/:commentId").patch(updateComment).delete(deleteComment);
+router.route("/comment/:commentId").delete(deleteComment).patch(updateComment);
 
 export default router;
