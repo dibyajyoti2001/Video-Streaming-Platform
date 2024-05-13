@@ -24,7 +24,7 @@ router
   .delete(deletePlaylist);
 
 router.route("/add/:videoId/:playlistId").patch(addVideoToPlaylist);
-router.route("/remove/:videoId/:playlistId").patch(removeVideoFromPlaylist);
+router.route("/remove/:videoId/:playlistId").delete(removeVideoFromPlaylist);
 
 router.route("/user/:userId").get(getUserPlaylists);
 

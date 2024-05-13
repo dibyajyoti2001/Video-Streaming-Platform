@@ -116,7 +116,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
         from: "videos",
         localField: "videos",
         foreignField: "_id",
-        as: "playlists",
+        as: "videos",
       },
     },
     // Stage-3: again match videos is available or not
@@ -131,7 +131,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
         from: "users",
         localField: "owner",
         foreignField: "_id",
-        as: "ownerDetails",
+        as: "owner",
       },
     },
     // Stage-5: add the fields to the playlist
